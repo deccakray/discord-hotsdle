@@ -17,9 +17,9 @@ client.once(Events.ClientReady, async (readyClient) => {
     console.log(`Logged in as ${readyClient.user?.tag}`);
 
      //'00 30 10 * * *' 10:30
-    let scheduledMessage = new cron.CronJob('00 46 05 * * *', () => {
+    let scheduledMessage = new cron.CronJob('00 00 15 * * *', () => {
     // This runs every day at 10:30:00, you can do anything you want
-      const guild = readyClient.guilds.cache.find(guild => guild.name == 'Decca\'s Den');
+      const guild = readyClient.guilds.cache.get('273575846609027083'); // Decca's Den
       if (!guild) {
         console.log("No guild found!");
         return;
