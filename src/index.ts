@@ -16,11 +16,10 @@ const currentDate = new Date();
 client.once(Events.ClientReady, async (readyClient) => {
     console.log(`Logged in as ${readyClient.user?.tag}`);
 
-     //'00 30 10 * * *' 10:30
-    let scheduledMessage = new cron.CronJob('00 00 15 * * *', () => {
-    // This runs every day at 10:30:00, you can do anything you want
+    //  '00 30 10 * * *' 10:30
+    let scheduledMessage = new cron.CronJob('00 02 15 * * *', () => {
       const guild = readyClient.guilds.cache.get('273575846609027083'); // Decca's Den
-      if (!guild) {
+       if (!guild) {
         console.log("No guild found!");
         return;
       }
@@ -30,10 +29,14 @@ client.once(Events.ClientReady, async (readyClient) => {
         console.log("messageChannel undefined");
         return;
       }
-      messageChannel.send('@here Daily HOTSdle!\nhttps://hotsdle.zgame.studio/hero-guesser');
+      messageChannel.send('@here Daily [HOTSdle](https://hotsdle.zgame.studio/hero-guesser)!');
     });
           
     scheduledMessage.start()
+
+    // const guild = readyClient.guilds.cache.get('1362916522988802098'); // decca's dev
+    // const messageChannel = readyClient.channels.cache.get('1362916522988802101') as TextChannel;
+    // messageChannel.send('@here Daily [HOTSdle](https://hotsdle.zgame.studio/hero-guesser)!')
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -43,6 +46,10 @@ client.on(Events.MessageCreate, async (message) => {
   if(message.author.id === client.user.id) return
   if (message.content.toLowerCase() == 'hotsdle me') {
     sendHotsdleMessage(message);
+  } else if (message.content.includes('I guessed the hero in #HotSdle in 2 tries (hero mode)')) {
+    message.channel.send(`<@${message.author.id}> Not bad for a lil silver`)
+  } else if (message.content.includes('I guessed the hero in #HotSdle in 1 tries (hero mode)')) {
+    message.channel.send(`<@${message.author.id}> You're still silver lol`)
   }
 });
 
