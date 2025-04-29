@@ -43,13 +43,33 @@ client.on(Events.MessageCreate, async (message) => {
   console.log(`${message.author.tag} said ${message.content}`);
 
   if (!client.user) return
-  if(message.author.id === client.user.id) return
+  if (message.author.id === client.user.id) return
   if (message.content.toLowerCase() == 'hotsdle me') {
     sendHotsdleMessage(message);
   } else if (message.content.includes('I guessed the hero in #HotSdle in 2 tries (hero mode)')) {
-    message.channel.send(`<@${message.author.id}> Not bad for a lil silver`)
+    var replyMesssage = "Not bad I guess."
+    switch (message.author.id) {
+      case '128603266287140864': // justin
+        replyMesssage = "Impressive, for a bronzey.";
+        break;
+      case '129053272018255872': // luke
+        replyMesssage = "Now get 10k in cs2.";
+        break;
+      case '122600932469899264': // me
+        replyMesssage = "Love that outta you."
+        break;
+      case '123666652150628353': // chai
+        replyMesssage = "TFT really paying off.";
+        break;
+      case '128707792579198976': // devin
+        replyMesssage = "TFT really paying off.";
+        break;
+      default:
+        break;
+    }
+    message.channel.send(`<@${message.author.id}> ${replyMesssage}`);
   } else if (message.content.includes('I guessed the hero in #HotSdle in 1 tries (hero mode)')) {
-    message.channel.send(`<@${message.author.id}> You're still silver lol`)
+    message.channel.send(`<@${message.author.id}> Now go open a case.`);
   }
 });
 
