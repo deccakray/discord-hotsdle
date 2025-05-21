@@ -1,30 +1,29 @@
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from "@libsql/client";
-import { eq, and } from "drizzle-orm";
-import { playersTable, scoresTable, wordlesTable, type SelectScoreWithRelations } from './schema';
+import { eq, and, sql, count } from "drizzle-orm";
+import { playersTable, scoresTable, type SelectScoreWithRelations } from './schema';
 import * as schema from './schema';
+import { DiscordAPIError, discordSort } from 'discord.js';
 
-const client = createClient({
+console.log(process.env.DB_FILE_NAME);
+console.log(process.env.TURSO_TOKEN);
+
+const client = () => createClient({
   url: process.env.DB_FILE_NAME!,
+  authToken: process.env.TURSO_TOKEN!
 });
-const db = drizzle(client, { schema });
+const db = drizzle(client(), { schema });
 
-export async function getScoresByGameNumber(gameNumber: number): Promise<SelectScoreWithRelations[]> {
+export async function saveScore(attempts: number, discordId: string,): Promise<Boolean> {
   try {
-    return await db.query.scoresTable.findMany({
-      where: eq(scoresTable.gameNumber, gameNumber), with: {
-        player: true
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
+    if (!await doesUserExistInScores(discordId)) {
+      await db.insert(scoresTable).values({ discordId }).onConflictDoNothing();
+    }
 
-export async function createWordle(gameNumber: number): Promise<boolean> {
-  try {
-    await db.insert(wordlesTable).values({ gameNumber }).onConflictDoNothing();
+    await db.update(scoresTable).set({ attempts: sql`${scoresTable.attempts} + ${attempts.toString()}` }).where(eq(scoresTable.discordId, discordId));
+    await db.update(scoresTable).set({ numberOfGames: sql`${scoresTable.numberOfGames} + 1`}).where(eq(scoresTable.discordId, discordId));
+    await db.update(scoresTable).set({ totalAttempts: sql`${scoresTable.totalAttempts} + 1`}).where(eq(scoresTable.discordId, discordId));
+
     return true;
   } catch (error) {
     console.error(error);
@@ -32,8 +31,100 @@ export async function createWordle(gameNumber: number): Promise<boolean> {
   }
 }
 
+export async function getScoreForUser(discordId: string): Promise<number | undefined> {
+  try {
+    const attemptsQuery = await db.select({ attempts: scoresTable.attempts }).from(scoresTable).where(eq(scoresTable.discordId, discordId))
+    console.log(attemptsQuery);
+    const attempts = attemptsQuery[0].attempts;
+    if (attempts == null) {
+      return undefined;
+    }
+    return attempts;
+  } catch (error) {
+    console.error(error);
+    return undefined;
+  }
+}
+
+export async function clearAttemptsForAllPlayers(playerIds: string[]): Promise<boolean> {
+  try {
+    playerIds.forEach(async (id) => {
+      await db.update(scoresTable).set({ attempts: 0 }).where(eq(scoresTable.discordId, id));
+    })
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+async function doesUserExistInPlayers(discordId: string): Promise<boolean> {
+  try {
+    const countQuery = await db.select({ count: count() }).from(playersTable).where(eq(playersTable.discordId, discordId));
+    return countQuery[0].count == 1;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+async function doesUserExistInScores(discordId: string): Promise<boolean> {
+  try {
+    const countQuery = await db.select({ count: count() }).from(scoresTable).where(eq(scoresTable.discordId, discordId));
+    return countQuery[0].count == 1;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+export async function setWeeklyStatsForAllPlayers(playerIds: string[]): Promise<boolean> {
+  try {
+    playerIds.forEach(async (id) => {
+      await db.update(scoresTable).set({ competitions: sql`${scoresTable.competitions} + 1`}).where(eq(scoresTable.discordId, id));
+    })
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+export async function setWinner(discordId: string): Promise<boolean> {
+  try {
+    await db.update(scoresTable).set({ wins: sql`${scoresTable.wins} + 1`}).where(eq(scoresTable.discordId, discordId)); 
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+// export async function getScoresByGameNumber(gameNumber: number): Promise<SelectScoreWithRelations[]> {
+//   try {
+//     return await db.query.scoresTable.findMany({
+//       where: eq(scoresTable.gameNumber, gameNumber), with: {
+//         player: true
+//       }
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return [];
+//   }
+// }
+
+// export async function createWordle(gameNumber: number): Promise<boolean> {
+//   try {
+//     await db.insert(wordlesTable).values({ gameNumber }).onConflictDoNothing();
+//     return true;
+//   } catch (error) {
+//     console.error(error);
+//     return false;
+//   }
+// }
+
 export async function createPlayer(discordId: string, discordName: string): Promise<boolean> {
   try {
+    if (await doesUserExistInPlayers(discordId)) return false
     await db.insert(playersTable).values({ discordId, discordName }).onConflictDoNothing();
     return true;
   } catch (error) {
@@ -42,21 +133,21 @@ export async function createPlayer(discordId: string, discordName: string): Prom
   }
 }
 
-export async function createScore(discordId: string, gameNumber: number, attempts: string, isWin: number = 0, isTie: number = 0): Promise<SelectScoreWithRelations | undefined> {
-  try {
-    const result = await db.insert(scoresTable).values({ discordId, gameNumber, attempts, isWin, isTie }).onConflictDoNothing().returning();
-    console.dir(result);
-    if (result.length === 0) {
-      return undefined;
-    }
-    const score = await db.query.scoresTable.findFirst({
-      where: and(eq(scoresTable.gameNumber, gameNumber), eq(scoresTable.discordId, discordId)), with: {
-        player: true
-      }
-    });
-    return score;
-  } catch (error) {
-    console.error(error);
-    return;
-  }
-}
+// export async function createScore(discordId: string, gameNumber: number, attempts: string, isWin: number = 0, isTie: number = 0): Promise<SelectScoreWithRelations | undefined> {
+//   try {
+//     const result = await db.insert(scoresTable).values({ discordId, gameNumber, attempts, isWin, isTie }).onConflictDoNothing().returning();
+//     console.dir(result);
+//     if (result.length === 0) {
+//       return undefined;
+//     }
+//     const score = await db.query.scoresTable.findFirst({
+//       where: and(eq(scoresTable.gameNumber, gameNumber), eq(scoresTable.discordId, discordId)), with: {
+//         player: true
+//       }
+//     });
+//     return score;
+//   } catch (error) {
+//     console.error(error);
+//     return;
+//   }
+// }
