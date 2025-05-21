@@ -13,6 +13,7 @@
     "@libsql/client": "^0.15.6",
     "cron": "^4.3.0",
     "discord.js": "^14.18.0",
+    "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1"
   },
   "private": true

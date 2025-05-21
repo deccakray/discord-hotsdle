@@ -10,8 +10,6 @@ const client = new Client({
   ],
 });
 
-
-
 const currentDate = new Date();
 
 client.once(Events.ClientReady, async (readyClient) => {
