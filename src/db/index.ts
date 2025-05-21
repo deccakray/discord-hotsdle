@@ -1,5 +1,3 @@
-import dotenv from "dotenv"
-dotenv.config();
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from "@libsql/client";
 import { eq, and, sql, count } from "drizzle-orm";
@@ -8,18 +6,9 @@ import * as schema from './schema';
 import { DiscordAPIError, discordSort } from 'discord.js';
 import { configDotenv } from 'dotenv';
 
-const path = require('path');
-console.log( path.resolve(__dirname, '../..', '.env'));
-console.log( path.resolve(__dirname, '../../', '.env'));
-require('dotenv').config({ path: path.resolve(__dirname, '../..', '.env') });
-
-
-console.log(process.env.DB_FILE_NAME);
-console.log(process.env.TURSO_TOKEN);
-
 const client = () => createClient({
-  url: process.env.DB_FILE_NAME!,
-  authToken: process.env.TURSO_TOKEN!
+  url: 'libsql://hotsdley-deccakray.aws-us-west-2.turso.io',
+  authToken: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiJkZGJhYTc4Yi02ZjYyLTQxMmYtODQ0Ni1hN2I0NzY3YjI3ZDYiLCJpYXQiOjE3NDc3OTE4ODIsInJpZCI6IjVjYmVjZmNjLTBkOTAtNGRlYS1iZDQzLWNjNDFlM2UxOTkyYiJ9.olmF5wGtIYb-e_nzAQ5kJ2YmX_gBtNJ-HdjHozeV1as04zl38U6XludlWjetYMitz9XH6k1mtfIes3wr2LzIDA'
 });
 const db = drizzle(client(), { schema });
 
