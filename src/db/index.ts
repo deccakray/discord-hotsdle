@@ -4,13 +4,12 @@ import { eq, and, sql, count } from "drizzle-orm";
 import { playersTable, scoresTable, type SelectScoreWithRelations } from './schema';
 import * as schema from './schema';
 import { DiscordAPIError, discordSort } from 'discord.js';
-import { configDotenv } from 'dotenv';
 
-const client = () => createClient({
-  url: 'libsql://hotsdley-deccakray.aws-us-west-2.turso.io',
-  authToken: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJnaWQiOiJkZGJhYTc4Yi02ZjYyLTQxMmYtODQ0Ni1hN2I0NzY3YjI3ZDYiLCJpYXQiOjE3NDc3OTE4ODIsInJpZCI6IjVjYmVjZmNjLTBkOTAtNGRlYS1iZDQzLWNjNDFlM2UxOTkyYiJ9.olmF5wGtIYb-e_nzAQ5kJ2YmX_gBtNJ-HdjHozeV1as04zl38U6XludlWjetYMitz9XH6k1mtfIes3wr2LzIDA'
+const client = createClient({
+  url: process.env.DB_FILE_NAME!,
+  authToken: process.env.TURSO_TOKEN!
 });
-const db = drizzle(client(), { schema });
+const db = drizzle(client, { schema });
 
 export async function saveScore(attempts: number, discordId: string,): Promise<Boolean> {
   try {
