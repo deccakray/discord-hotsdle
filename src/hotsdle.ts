@@ -47,15 +47,15 @@ async function weeklyHotsdleCompetitionJob(readyClient: Client) {
 
       const leaderboard = await getLeaderboard();
 
-      const noAttempts = leaderboard.every(attempts => attempts[1] == 0)
+      const noAttempts = leaderboard.every(attempts => attempts[1] == 0);
       if (!noAttempts) {
         messageChannel.send(getWeeklyWinnerMessage(leaderboard));
-        updateStatsAfterCompetition(leaderboard[0][0])
+        updateStatsAfterCompetition(leaderboard[0][0]);
         messageChannel.send('### New HOTSdle Weekly starts today!\n> [HOTSdle](https://hotsdle.zgame.studio/hero-guesser)!');
       }
     });
           
-    scheduledMessage.start()
+    scheduledMessage.start();
 }
 
 async function dailyHotsdleJob(readyClient: Client) {
@@ -75,7 +75,7 @@ async function dailyHotsdleJob(readyClient: Client) {
       messageChannel.send('@here Daily [HOTSdle](https://hotsdle.zgame.studio/hero-guesser)!');
     });
           
-    scheduledMessage.start()
+    scheduledMessage.start();
 }
 
 async function updateStatsAfterCompetition(winnerId: string) {
@@ -85,37 +85,54 @@ async function updateStatsAfterCompetition(winnerId: string) {
     db.clearAttemptsForAllPlayers(stingerIds);
 }
 
-export async function getLeaderboard(): Promise<[string, number][]> {
-    const leaderboard: [string, number][] = [];
+export async function getLeaderboard(): Promise<[string, number, number][]> {
+    const leaderboard: [string, number, number][] = [];
 
     for (const [id, name] of stingerGang) {
-        const score = await db.getScoreForUser(id)
+        const score = await db.getScoreForUser(id);
+        console.log(score);
         if (score != undefined) {
-            leaderboard.push([id, score]);
+            const attempts = score[0];
+            const totalAttempts = score[1];
+            leaderboard.push([id, attempts, totalAttempts]);
         } else {
-            leaderboard.push([id, 0]);
+            leaderboard.push([id, 0, 0]);
         }
     }
 
-    return leaderboard.sort((a, b) => a[1] - b[1]);
+    return leaderboard.sort((a, b) => { 
+        const attempts = a[1];
+        const totalAttempts = a[2];
+        const attempts2 = b[1];
+        const totalAttempts2 = b[2];
+
+        if (totalAttempts < totalAttempts2) {
+            return 1;
+        }
+        if (totalAttempts > totalAttempts2) {
+            return -1;
+        }
+       
+        return attempts - attempts2;
+    });
 }
 
-export function getLeaderboardMessage(leaderboard: [string, number][]): string {
-    const leaderboardRankingString = leaderboard.map((ranking: [string, number], index) => {
+export function getLeaderboardMessage(leaderboard: [string, number, number][]): string {
+    const leaderboardRankingString = leaderboard.map((ranking: [string, number, number], index) => {
         const rank = (index + 1).toString();
-        return `${rank}. <@${ranking[0]}> (${ranking[1]} total attempts)`;
+        return `${rank}. <@${ranking[0]}> (**${ranking[1]}** tries with **${ranking[2]}** games played)`;
     }).join("\n")
     return ":first_place: Current **HotSdle Weekly** Power Rankings! :first_place:\n" + leaderboardRankingString;
 }
 
-function getWeeklyWinnerMessage(leaderboard: [string, number][]): string {
+function getWeeklyWinnerMessage(leaderboard: [string, number, number][]): string {
     const winner = leaderboard[0];
     const runnerUps = leaderboard.slice(1)
 
-    const messageOne = `# HOTSdle Weekly\n:tada: Congratuations to <@${winner[0]}>, this week's HOTSdle champion with just ${winner[1]} attempts! :tada:\n(you must play a lot with the fam)`;
-    const messageTwo = `\nJust not good enough:\n` + runnerUps.map((ranking: [string, number], index) => {
+    const messageOne = `# HOTSdle Weekly\n:tada: Congratuations to <@${winner[0]}>, this week's HOTSdle champion with just ${winner[1]} tries! :tada:\n(you must play a lot with the fam)`;
+    const messageTwo = `\nJust not good enough:\n` + runnerUps.map((ranking: [string, number, number], index) => {
         const rank = (index + 2).toString();
-        return `${rank}. <@${ranking[0]}> (${ranking[1]} total attempts)`;
+        return `${rank}. <@${ranking[0]}> (${ranking[1]} number of tries with ${ranking[2]} total games played)`;
     }).join("\n")
 
     return messageOne + `\n` + messageTwo;

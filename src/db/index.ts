@@ -28,17 +28,17 @@ export async function saveScore(attempts: number, discordId: string,): Promise<B
   }
 }
 
-export async function getScoreForUser(discordId: string): Promise<number | undefined> {
+export async function getScoreForUser(discordId: string): Promise<number[] | undefined> {
   try {
-    const attemptsQuery = await db.select({ attempts: scoresTable.attempts }).from(scoresTable).where(eq(scoresTable.discordId, discordId))
-    console.log(attemptsQuery);
+    const attemptsQuery = await db.select({ attempts: scoresTable.attempts, total_attempts: scoresTable.totalAttempts }).from(scoresTable).where(eq(scoresTable.discordId, discordId))
     const attempts = attemptsQuery[0].attempts;
-    if (attempts == null) {
+    const totalAttempts = attemptsQuery[0].total_attempts;
+    if (attempts == null || totalAttempts == null) {
       return undefined;
     }
-    return attempts;
+    const attemptsPair = [attempts, totalAttempts];
+    return attemptsPair;
   } catch (error) {
-    console.error(error);
     return undefined;
   }
 }
@@ -46,7 +46,7 @@ export async function getScoreForUser(discordId: string): Promise<number | undef
 export async function clearAttemptsForAllPlayers(playerIds: string[]): Promise<boolean> {
   try {
     playerIds.forEach(async (id) => {
-      await db.update(scoresTable).set({ attempts: 0 }).where(eq(scoresTable.discordId, id));
+      await db.update(scoresTable).set({ attempts: 0, totalAttempts: 0 }).where(eq(scoresTable.discordId, id));
     })
     return true;
   } catch (error) {

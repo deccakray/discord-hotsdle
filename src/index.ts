@@ -10,15 +10,15 @@ const client = new Client({
   ],
 });
 
-const currentDate = new Date();
-
 client.once(Events.ClientReady, async (readyClient) => {
     console.log(`Logged in as ${readyClient.user?.tag}`);
-  
+
     setupHotsdle(readyClient);
     // const guild = readyClient.guilds.cache.get('1362916522988802098'); // decca's dev
     // const messageChannel = readyClient.channels.cache.get('1362916522988802101') as TextChannel;
-    //     messageChannel.send(`# HOTSdle Weekly\n:tada: Congratuations to , this week's HOTSdle champion with just  attempts! :tada:\n(you must play a lot with the fam)`)
+    // const leaderboard = await getLeaderboard();
+    // messageChannel.send(getLeaderboardMessage(leaderboard));
+        // messageChannel.send(`# HOTSdle Weekly\n:tada: Congratuations to , this week's HOTSdle champion with just  attempts! :tada:\n(you must play a lot with the fam)`)
     //     messageChannel.send('### New HOTSdle Weekly starts today!\n> [HOTSdle](https://hotsdle.zgame.studio/hero-guesser)!');
 
 });
